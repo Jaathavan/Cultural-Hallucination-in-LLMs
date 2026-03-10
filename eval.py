@@ -5,6 +5,9 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ---------- Prompts (from HalluLens, lightly cleaned) ----------
 
@@ -235,8 +238,8 @@ def main():
     df = df.copy()
     df["prompt"] = df["question"]
     df["generation"] = df["model_answer"]
-    # df["gold_answer"] = df["gold_answer"]
-    df["gold_answer"] = df["gold"]
+    df["gold_answer"] = df["gold_answer"]
+    # df["gold_answer"] = df["gold"]
 
     print(f"Loaded {len(df)} examples.")
 
