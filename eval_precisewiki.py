@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import argparse
 import json
 from pathlib import Path
@@ -5,9 +8,6 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # ---------- Prompts (from HalluLens, lightly cleaned) ----------
 
@@ -216,7 +216,7 @@ def main():
     parser.add_argument(
         "--judge_model",
         type=str,
-        default="gpt-4o",   # or "gpt-4o-mini", "gpt-5.1-chat-latest", etc.
+        default="gpt-4.1",   # or "gpt-4o-mini", "gpt-5.1-chat-latest", etc.
         help="OpenAI model name used as judge.",
     )
     parser.add_argument(
@@ -239,7 +239,6 @@ def main():
     df["prompt"] = df["question"]
     df["generation"] = df["model_answer"]
     df["gold_answer"] = df["gold_answer"]
-    # df["gold_answer"] = df["gold"]
 
     print(f"Loaded {len(df)} examples.")
 
