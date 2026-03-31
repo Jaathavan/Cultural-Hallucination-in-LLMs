@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from openai import OpenAI
 import anthropic
-import requests
 import os
 
 client_openai = OpenAI()
@@ -26,7 +25,7 @@ client_openrouter = OpenAI(
 # --- Dataset file map ---
 DATASET_FILES = {
     ("precise", "en"): "PreciseWikiQA_EN.xlsx",
-    ("precise", "ta"): "PreciseWikiQA_GU.xlsx",
+    ("precise", "gu"): "PreciseWikiQA_GU.xlsx",
     ("precise", "hi"): "PreciseWikiQA_HI.xlsx",
     ("longwiki", "en"): "LongWikiQA_EN.xlsx",
     ("longwiki", "ta"): "LongWikiQA_GU.xlsx",
@@ -157,7 +156,7 @@ def load_dataset(ds_dir, dtype, lang):
             raise ValueError(f"Missing question column. Found: {list(df.columns)}")
 
         if a_col is None:
-            if dtype == "nonexistent":
+            if dtype == "nonexistent" or dtype == "nonexistent_ta":
                 df["gold_answer"] = "No Information Available"
             else:
                 raise ValueError(
@@ -174,7 +173,7 @@ def load_dataset(ds_dir, dtype, lang):
             df["domain"] = "unknown"
 
     # ---------------- GUJARATI ----------------
-    elif lang == "ta":
+    elif lang == "gu":
         q_col = "question"
         a_col = "gold_answer"
         d_col = "domain"
@@ -185,7 +184,7 @@ def load_dataset(ds_dir, dtype, lang):
         df = df.rename(columns={q_col: "question"})
 
         if a_col not in df.columns:
-            if dtype == "nonexistent":
+            if dtype == "nonexistent" or dtype == "nonexistent_ta":
                 df["gold_answer"] = "માહિતી ઉપલબ્ધ નથી"
             else:
                 raise ValueError(f"Expected '{a_col}' in Gujarati file. Found: {list(df.columns)}")
@@ -200,7 +199,7 @@ def load_dataset(ds_dir, dtype, lang):
     # ---------------- HINDI ----------------
     elif lang == "hi":
         # Expected Hindi column names after your translation step
-        q_candidates = ["question_hindi", "question"]
+        q_candidates = ["question_hindi", "question", "Question"]
         a_candidates = ["answer_hindi", "gold_answer", "answer"]
         d_candidates = ["domain_hindi", "domain", "category"]
 
@@ -214,7 +213,7 @@ def load_dataset(ds_dir, dtype, lang):
         df = df.rename(columns={q_col: "question"})
 
         if a_col is None:
-            if dtype == "nonexistent":
+            if dtype == "nonexistent" or dtype == "nonexistent_ta":
                 df["gold_answer"] = "कोई जानकारी उपलब्ध नहीं है"
             else:
                 raise ValueError(f"Expected Hindi answer column. Found: {list(df.columns)}")
@@ -228,7 +227,7 @@ def load_dataset(ds_dir, dtype, lang):
 
     # ---------------- TAMIL ----------------
     elif lang == "ta":
-        q_candidates = ["question_tamil", "question"]
+        q_candidates = ["question_tamil", "question", "Question"]
         a_candidates = ["answer_tamil", "gold_answer", "answer"]
         d_candidates = ["domain_tamil", "domain", "category"]
 
@@ -242,7 +241,7 @@ def load_dataset(ds_dir, dtype, lang):
         df = df.rename(columns={q_col: "question"})
 
         if a_col is None:
-            if dtype == "nonexistent":
+            if dtype == "nonexistent" or dtype == "nonexistent_ta":
                 df["gold_answer"] = "தகவல் இல்லை"
             else:
                 raise ValueError(f"Expected Tamil answer column. Found: {list(df.columns)}")
@@ -280,6 +279,22 @@ def call_api(model_tag, prompt):
         )
         return res.content[0].text.strip()
 
+    # --- Qwen ---
+    if model_tag in ["qwen-mt-plus"]:
+        res = client_qwen.chat.completions.create(
+            model="qwen-mt-plus",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return res.choices[0].message.content
+
+    # -- Llama --
+    if model_tag in ["llama-4-maverick"]:
+        res = client_openrouter.chat.completions.create(
+            model="meta-llama/llama-4-maverick",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0
+        )
+        return res.choices[0].message.content.strip()
     return "ERROR: Unknown model"
 
 def main():
@@ -287,7 +302,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_tag", required=True)
-    parser.add_argument("--dataset_type", required=True, choices=["precise", "nonexistent"])
+    parser.add_argument("--dataset_type", required=True, choices=["precise", "nonexistent", "precise_ta", "nonexistent_ta"])
     parser.add_argument("--lang", required=True, choices=["en", "gu", "hi", "ta"])
     args = parser.parse_args()
 
